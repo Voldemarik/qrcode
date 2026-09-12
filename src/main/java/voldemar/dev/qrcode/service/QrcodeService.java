@@ -69,6 +69,9 @@ public class QrcodeService {
             throw new IllegalStateException("Qrcode with uuid = " + uuid + " is not exist");
         }
         Qrcode qrcode = optionalQrcode.get();
+        qrcode.setUuid(UUID.randomUUID());
+
+        repository.save(qrcode);
 
         return qrcode.getParticipantId();
     }
