@@ -23,7 +23,7 @@ public class ParticipantService {
     private final Mapper mapper;
 
     public List<GetParticipantOutput> getAllParticipants() {
-        return repository.findAll().stream()
+        return repository.findAllWithQrcodeList().stream()
                 .map(mapper::mapParticipantToDto)
                 .toList();
     }
