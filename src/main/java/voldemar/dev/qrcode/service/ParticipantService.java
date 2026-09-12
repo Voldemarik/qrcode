@@ -1,54 +1,91 @@
 package voldemar.dev.qrcode.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import voldemar.dev.qrcode.controller.ParticipantDto;
+import voldemar.dev.qrcode.dto.input.CreateParticipantInput;
+import voldemar.dev.qrcode.dto.input.UpdateParticipantInput;
+import voldemar.dev.qrcode.dto.output.GetLoginOutput;
+import voldemar.dev.qrcode.dto.output.GetParticipantOutput;
 import voldemar.dev.qrcode.entity.Participant;
-import voldemar.dev.qrcode.entity.Qrcode;
 import voldemar.dev.qrcode.repository.ParticipantRepository;
-import voldemar.dev.qrcode.repository.QrcodeRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ParticipantService {
-    private final ParticipantRepository participantRepository;
-    private final QrcodeRepository qrcodeRepository;
+
+    private final ParticipantRepository repository;
+    private final ShareAdapter adapter;
     private final Mapper mapper;
 
-    public ParticipantService(ParticipantRepository participantRepository, QrcodeRepository qrcodeRepository, Mapper mapper) {
-        this.participantRepository = participantRepository;
-        this.qrcodeRepository = qrcodeRepository;
-        this.mapper = mapper;
-    }
-
-    public List<ParticipantDto> getAllParticipants() {
-        return participantRepository.findAll().stream()
+    public List<GetParticipantOutput> getAllParticipants() {
+        return repository.findAll().stream()
                 .map(mapper::mapParticipantToDto)
                 .toList();
     }
 
     @Transactional
-    public ParticipantDto createParticipant(ParticipantDto participantDto) {
-        Participant entity = new Participant();
+    public GetParticipantOutput createParticipant(CreateParticipantInput participantDto) {
+        Participant participant = new Participant();
+        participant.setFirstName(participantDto.firstName());
+        participant.setLastName(participantDto.lastName());
+        participant.setPatronymic(participantDto.patronymic());
 
-        entity.setFirstName(participantDto.firstName());
-        entity.setLastName(participantDto.lastName());
-        entity.setPatronymic(participantDto.patronymic());
+        repository.save(participant);
+        participant.setQrcodeList(adapter.sendCreateRequest(participant.getId()));
 
-        Qrcode qrcode = new Qrcode();
-        qrcode.setId(UUID.randomUUID());
-        qrcode.setStatus(true);
+        return mapper.mapParticipantToDto(participant);
+    }
 
-        qrcodeRepository.save(qrcode);
+    public GetParticipantOutput updateParticipant(Long id, UpdateParticipantInput participantDto) {
+        Optional<Participant> optionalParticipant = repository.findById(id);
+        if (optionalParticipant.isEmpty()) {
+            throw new IllegalStateException("Participant with id = " + id + " is not exist");
+        }
+        Participant participant = optionalParticipant.get();
 
-        entity.setCurrentQrcode(qrcode);
-        participantRepository.save(entity);
+        String firstName = participantDto.firstName();
+        String lastName = participantDto.lastName();
+        String patronymic = participantDto.patronymic();
 
-        qrcode.setParticipantId(entity.getId());
-        qrcodeRepository.save(qrcode);
+        if (firstName != null && !firstName.equals(participant.getFirstName())) {
+            participant.setFirstName(firstName);
+        }
+        if (lastName != null && !lastName.equals(participant.getLastName())) {
+            participant.setLastName(lastName);
+        }
+        if (patronymic != null && !patronymic.equals(participant.getPatronymic())) {
+            participant.setPatronymic(patronymic);
+        }
 
-        return mapper.mapParticipantToDto(entity);
+        repository.save(participant);
+
+        return mapper.mapParticipantToDto(participant);
+    }
+
+    @Transactional
+    public void deleteParticipant(Long id) {
+        Optional<Participant> optionalParticipant = repository.findById(id);
+        if (optionalParticipant.isEmpty()) {
+            throw new IllegalStateException("Participant with id = " + id + " is not exist");
+        }
+        adapter.sendDeleteRequest(id);
+        repository.deleteById(id);
+    }
+
+    @Transactional
+    public GetLoginOutput login(UUID uuid) {
+        Long id = adapter.sendSearchRequest(uuid);
+        Optional<Participant> optionalParticipant = repository.findById(id);
+        if (optionalParticipant.isEmpty()) {
+            throw new IllegalStateException("Participant with id = " + id + " is not exist");
+        }
+        Participant participant = optionalParticipant.get();
+
+        return mapper.mapParticipantToLoginDto(participant);
     }
 }

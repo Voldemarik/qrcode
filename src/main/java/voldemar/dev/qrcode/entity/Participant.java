@@ -1,6 +1,5 @@
 package voldemar.dev.qrcode.entity;
 
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,11 +18,7 @@ public class Participant {
     private String lastName;
     private String patronymic;
 
-    @OneToOne
-    @JoinColumn(name = "current_qrcode_id")
-    private Qrcode currentQrcode;
-
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "participant_id")
-    private List<Qrcode> oldQrs = new ArrayList<>();
+    private List<Qrcode> qrcodeList = new ArrayList<>();
 }

@@ -3,8 +3,9 @@ package voldemar.dev.qrcode.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import voldemar.dev.qrcode.controller.ParticipantDto;
-import voldemar.dev.qrcode.controller.QrcodeDto;
+import voldemar.dev.qrcode.dto.output.GetLoginOutput;
+import voldemar.dev.qrcode.dto.output.GetQrcodeOutput;
+import voldemar.dev.qrcode.dto.output.GetParticipantOutput;
 import voldemar.dev.qrcode.entity.Participant;
 import voldemar.dev.qrcode.entity.Qrcode;
 
@@ -13,26 +14,41 @@ public class Mapper {
 
     private static final Logger log = LoggerFactory.getLogger(Mapper.class);
 
-    public ParticipantDto mapParticipantToDto(Participant participant) {
+    public GetParticipantOutput mapParticipantToDto(Participant participant) {
         log.info("Mapping participant to dto: participantId={}", participant.getId());
-        return new ParticipantDto(
+        return new GetParticipantOutput(
                 participant.getId(),
                 participant.getFirstName(),
                 participant.getLastName(),
                 participant.getPatronymic(),
-                mapQrcodeToDto(participant.getCurrentQrcode()),
-                participant.getOldQrs().stream()
-                        .filter(e -> e.getStatus() == false)
-                        .map(this::mapQrcodeToDto)
+                participant.getQrcodeList().stream()
+                        .map(Qrcode::getUuid)
                         .toList()
         );
     }
 
-    public QrcodeDto mapQrcodeToDto(Qrcode qrcode) {
-        return new QrcodeDto(
+    public GetQrcodeOutput mapQrcodeToDto(Qrcode qrcode) {
+        return new GetQrcodeOutput(
                 qrcode.getId(),
-                qrcode.getStatus(),
+                qrcode.getUuid(),
                 qrcode.getParticipantId()
+        );
+    }
+
+    public Qrcode mapQrcodeDtoToEntity(GetQrcodeOutput qrcodeDto) {
+        Qrcode qrcode = new Qrcode();
+        qrcode.setId(qrcodeDto.id());
+        qrcode.setUuid(qrcodeDto.uuid());
+        qrcode.setParticipantId(qrcodeDto.participantId());
+
+        return qrcode;
+    }
+
+    public GetLoginOutput mapParticipantToLoginDto(Participant participant) {
+        return new GetLoginOutput(
+                participant.getFirstName(),
+                participant.getLastName(),
+                participant.getPatronymic()
         );
     }
 }

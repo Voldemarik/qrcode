@@ -10,9 +10,10 @@ import java.util.UUID;
 @Table(name = "qrcodes")
 public class Qrcode {
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private Boolean status;
+    private UUID uuid;
 
     @Column(name = "participant_id")
     private Long participantId;
