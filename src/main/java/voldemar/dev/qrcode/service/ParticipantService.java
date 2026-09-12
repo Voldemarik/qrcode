@@ -10,7 +10,6 @@ import voldemar.dev.qrcode.dto.output.GetParticipantOutput;
 import voldemar.dev.qrcode.entity.Participant;
 import voldemar.dev.qrcode.repository.ParticipantRepository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,12 +20,6 @@ public class ParticipantService {
     private final ParticipantRepository repository;
     private final ShareAdapter adapter;
     private final Mapper mapper;
-
-    public List<GetParticipantOutput> getAllParticipants() {
-        return repository.findAllWithQrcodeList().stream()
-                .map(mapper::mapParticipantToDto)
-                .toList();
-    }
 
     @Transactional
     public GetParticipantOutput createParticipant(CreateParticipantInput participantDto) {

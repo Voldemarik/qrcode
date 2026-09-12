@@ -3,7 +3,6 @@ package voldemar.dev.qrcode.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -20,5 +19,5 @@ public class Participant {
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "participant_id")
-    private List<Qrcode> qrcodeList = new ArrayList<>();
+    private List<Qrcode> qrcodeList;
 }

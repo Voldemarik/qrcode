@@ -8,7 +8,6 @@ import voldemar.dev.qrcode.dto.output.GetQrcodeOutput;
 import voldemar.dev.qrcode.entity.Qrcode;
 import voldemar.dev.qrcode.repository.QrcodeRepository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,12 +17,6 @@ public class QrcodeService {
 
     private final QrcodeRepository repository;
     private final Mapper mapper;
-
-    public List<GetQrcodeOutput> getAllQrcodes() {
-        return repository.findAll().stream()
-                .map(mapper::mapQrcodeToDto)
-                .toList();
-    }
 
     public GetQrcodeOutput createQrcode(CreateQrcodeInput qrcodeDto) {
         Qrcode qrcode = new Qrcode();
