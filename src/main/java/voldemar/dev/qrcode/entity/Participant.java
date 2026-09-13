@@ -22,7 +22,7 @@ public class Participant {
     private String lastName;
     private String patronymic;
 
-    @OneToMany(fetch = FetchType.LAZY)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "participant_id")
     private List<Qrcode> qrcodeList;
 

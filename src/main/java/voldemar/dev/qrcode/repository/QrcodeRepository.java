@@ -11,5 +11,5 @@ import java.util.UUID;
 public interface QrcodeRepository extends JpaRepository<Qrcode, Long> {
     Optional<Qrcode> findByUuid(UUID uuid);
 
-    void deleteAllByParticipantId(Long id);
+    boolean existsByUuid(UUID uuid);
 }

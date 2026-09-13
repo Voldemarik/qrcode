@@ -1,4 +1,4 @@
-package voldemar.dev.qrcode.exception;
+package voldemar.dev.qrcode.dto.exception;
 
 public class NotFoundException extends RuntimeException {
     public NotFoundException(String message) {

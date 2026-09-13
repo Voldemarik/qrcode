@@ -9,7 +9,7 @@ import voldemar.dev.qrcode.dto.output.LoginResponse;
 import voldemar.dev.qrcode.dto.output.ParticipantResponse;
 import voldemar.dev.qrcode.entity.Participant;
 import voldemar.dev.qrcode.entity.Qrcode;
-import voldemar.dev.qrcode.exception.NotFoundException;
+import voldemar.dev.qrcode.dto.exception.NotFoundException;
 import voldemar.dev.qrcode.repository.ParticipantRepository;
 
 import java.text.MessageFormat;
@@ -35,7 +35,7 @@ public class ParticipantService {
         repository.save(participant);
 
         List<Qrcode> qrcodeList = new ArrayList<>();
-        qrcodeList.add(mapper.mapQrcodeDtoToEntity(qrcodeService.createQrcode(participant.getId())));
+        qrcodeList.add(qrcodeService.createQrcodeEntity(participant.getId()));
         participant.setQrcodeList(qrcodeList);
 
         return mapper.mapParticipantToDto(participant);
@@ -63,25 +63,23 @@ public class ParticipantService {
         }
 
         repository.save(participant);
-
         return mapper.mapParticipantToDto(participant);
     }
 
     @Transactional
     public void deleteParticipant(Long id) {
-        repository.findById(id).orElseThrow(
-                () -> new NotFoundException(
-                        MessageFormat.format("Participant with id = {0} is not exists", id)
-                )
-        );
+        if (!repository.existsById(id)) {
+            throw new NotFoundException(
+                    MessageFormat.format("Participant with id = {0} is not exists", id)
+            );
+        }
 
-        qrcodeService.deleteQrcodeList(id);
         repository.deleteById(id);
     }
 
     @Transactional
     public LoginResponse login(UUID uuid) {
-        Long id = qrcodeService.searchQrcode(uuid);
+        Long id = qrcodeService.findAndRenewQrcode(uuid);
         Participant participant = repository.findById(id).orElseThrow(
                 () -> new NotFoundException(
                         MessageFormat.format("Participant with id = {0} is not exists", id)
