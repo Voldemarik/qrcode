@@ -1,22 +1,17 @@
 package voldemar.dev.qrcode.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import voldemar.dev.qrcode.dto.output.GetLoginOutput;
-import voldemar.dev.qrcode.dto.output.GetQrcodeOutput;
-import voldemar.dev.qrcode.dto.output.GetParticipantOutput;
+import voldemar.dev.qrcode.dto.output.LoginResponse;
+import voldemar.dev.qrcode.dto.output.QrcodeResponse;
+import voldemar.dev.qrcode.dto.output.ParticipantResponse;
 import voldemar.dev.qrcode.entity.Participant;
 import voldemar.dev.qrcode.entity.Qrcode;
 
 @Component
 public class Mapper {
 
-    private static final Logger log = LoggerFactory.getLogger(Mapper.class);
-
-    public GetParticipantOutput mapParticipantToDto(Participant participant) {
-        log.info("Mapping participant to dto: participantId={}", participant.getId());
-        return new GetParticipantOutput(
+    public ParticipantResponse mapParticipantToDto(Participant participant) {
+        return new ParticipantResponse(
                 participant.getId(),
                 participant.getFirstName(),
                 participant.getLastName(),
@@ -27,15 +22,15 @@ public class Mapper {
         );
     }
 
-    public GetQrcodeOutput mapQrcodeToDto(Qrcode qrcode) {
-        return new GetQrcodeOutput(
+    public QrcodeResponse mapQrcodeToDto(Qrcode qrcode) {
+        return new QrcodeResponse(
                 qrcode.getId(),
                 qrcode.getUuid(),
                 qrcode.getParticipantId()
         );
     }
 
-    public Qrcode mapQrcodeDtoToEntity(GetQrcodeOutput qrcodeDto) {
+    public Qrcode mapQrcodeDtoToEntity(QrcodeResponse qrcodeDto) {
         Qrcode qrcode = new Qrcode();
         qrcode.setId(qrcodeDto.id());
         qrcode.setUuid(qrcodeDto.uuid());
@@ -44,8 +39,8 @@ public class Mapper {
         return qrcode;
     }
 
-    public GetLoginOutput mapParticipantToLoginDto(Participant participant) {
-        return new GetLoginOutput(
+    public LoginResponse mapParticipantToLoginDto(Participant participant) {
+        return new LoginResponse(
                 participant.getFirstName(),
                 participant.getLastName(),
                 participant.getPatronymic()

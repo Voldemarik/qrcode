@@ -2,9 +2,8 @@ package voldemar.dev.qrcode.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import voldemar.dev.qrcode.dto.input.CreateQrcodeInput;
-import voldemar.dev.qrcode.dto.input.UpdateQrcodeInput;
-import voldemar.dev.qrcode.dto.output.GetQrcodeOutput;
+import voldemar.dev.qrcode.dto.input.UpdateQrcodeRequest;
+import voldemar.dev.qrcode.dto.output.QrcodeResponse;
 import voldemar.dev.qrcode.service.QrcodeService;
 
 @RestController
@@ -15,14 +14,14 @@ public class QrcodeController {
     private final QrcodeService service;
 
     @PostMapping
-    public GetQrcodeOutput createQrcode(@RequestBody CreateQrcodeInput qrcodeDto) {
-        return service.createQrcode(qrcodeDto);
+    public QrcodeResponse createQrcode(@RequestParam("participant_id") Long participantId) {
+        return service.createQrcode(participantId);
     }
 
     @PutMapping("{id}")
-    public GetQrcodeOutput updateQrcode(
+    public QrcodeResponse updateQrcode(
             @PathVariable Long id,
-            @RequestBody UpdateQrcodeInput qrcodeDto
+            @RequestBody UpdateQrcodeRequest qrcodeDto
     ) {
         return service.updateQrcode(id, qrcodeDto);
     }

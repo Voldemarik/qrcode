@@ -3,43 +3,50 @@ package voldemar.dev.qrcode.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import voldemar.dev.qrcode.dto.input.CreateParticipantInput;
-import voldemar.dev.qrcode.dto.input.UpdateParticipantInput;
-import voldemar.dev.qrcode.dto.output.GetLoginOutput;
-import voldemar.dev.qrcode.dto.output.GetParticipantOutput;
+import voldemar.dev.qrcode.dto.input.CreateParticipantRequest;
+import voldemar.dev.qrcode.dto.input.UpdateParticipantRequest;
+import voldemar.dev.qrcode.dto.output.LoginResponse;
+import voldemar.dev.qrcode.dto.output.ParticipantResponse;
 import voldemar.dev.qrcode.entity.Participant;
+import voldemar.dev.qrcode.entity.Qrcode;
+import voldemar.dev.qrcode.exception.NotFoundException;
 import voldemar.dev.qrcode.repository.ParticipantRepository;
 
-import java.util.Optional;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ParticipantService {
 
+    private final QrcodeService qrcodeService;
     private final ParticipantRepository repository;
-    private final ShareAdapter adapter;
     private final Mapper mapper;
 
     @Transactional
-    public GetParticipantOutput createParticipant(CreateParticipantInput participantDto) {
+    public ParticipantResponse createParticipant(CreateParticipantRequest participantDto) {
         Participant participant = new Participant();
         participant.setFirstName(participantDto.firstName());
         participant.setLastName(participantDto.lastName());
         participant.setPatronymic(participantDto.patronymic());
 
         repository.save(participant);
-        participant.setQrcodeList(adapter.sendCreateRequest(participant.getId()));
+
+        List<Qrcode> qrcodeList = new ArrayList<>();
+        qrcodeList.add(mapper.mapQrcodeDtoToEntity(qrcodeService.createQrcode(participant.getId())));
+        participant.setQrcodeList(qrcodeList);
 
         return mapper.mapParticipantToDto(participant);
     }
 
-    public GetParticipantOutput updateParticipant(Long id, UpdateParticipantInput participantDto) {
-        Optional<Participant> optionalParticipant = repository.findById(id);
-        if (optionalParticipant.isEmpty()) {
-            throw new IllegalStateException("Participant with id = " + id + " is not exist");
-        }
-        Participant participant = optionalParticipant.get();
+    public ParticipantResponse updateParticipant(Long id, UpdateParticipantRequest participantDto) {
+        Participant participant = repository.findById(id).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Participant with id = {0} is not exists", id)
+                )
+        );
 
         String firstName = participantDto.firstName();
         String lastName = participantDto.lastName();
@@ -62,22 +69,24 @@ public class ParticipantService {
 
     @Transactional
     public void deleteParticipant(Long id) {
-        Optional<Participant> optionalParticipant = repository.findById(id);
-        if (optionalParticipant.isEmpty()) {
-            throw new IllegalStateException("Participant with id = " + id + " is not exist");
-        }
-        adapter.sendDeleteRequest(id);
+        repository.findById(id).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Participant with id = {0} is not exists", id)
+                )
+        );
+
+        qrcodeService.deleteQrcodeList(id);
         repository.deleteById(id);
     }
 
     @Transactional
-    public GetLoginOutput login(UUID uuid) {
-        Long id = adapter.sendSearchRequest(uuid);
-        Optional<Participant> optionalParticipant = repository.findById(id);
-        if (optionalParticipant.isEmpty()) {
-            throw new IllegalStateException("Participant with id = " + id + " is not exist");
-        }
-        Participant participant = optionalParticipant.get();
+    public LoginResponse login(UUID uuid) {
+        Long id = qrcodeService.searchQrcode(uuid);
+        Participant participant = repository.findById(id).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Participant with id = {0} is not exists", id)
+                )
+        );
 
         return mapper.mapParticipantToLoginDto(participant);
     }

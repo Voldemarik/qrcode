@@ -2,48 +2,70 @@ package voldemar.dev.qrcode.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import voldemar.dev.qrcode.dto.input.CreateQrcodeInput;
-import voldemar.dev.qrcode.dto.input.UpdateQrcodeInput;
-import voldemar.dev.qrcode.dto.output.GetQrcodeOutput;
+import voldemar.dev.qrcode.dto.input.UpdateQrcodeRequest;
+import voldemar.dev.qrcode.dto.output.QrcodeResponse;
 import voldemar.dev.qrcode.entity.Qrcode;
+import voldemar.dev.qrcode.exception.AlreadyExistsException;
+import voldemar.dev.qrcode.exception.NotFoundException;
+import voldemar.dev.qrcode.repository.ParticipantRepository;
 import voldemar.dev.qrcode.repository.QrcodeRepository;
 
-import java.util.Optional;
+import java.text.MessageFormat;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class QrcodeService {
 
+    private final ParticipantRepository participantRepository;
     private final QrcodeRepository repository;
     private final Mapper mapper;
 
-    public GetQrcodeOutput createQrcode(CreateQrcodeInput qrcodeDto) {
+    public QrcodeResponse createQrcode(Long participantId) {
         Qrcode qrcode = new Qrcode();
         qrcode.setUuid(UUID.randomUUID());
-        qrcode.setParticipantId(qrcodeDto.participant_id());
+
+        participantRepository.findById(participantId).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Participant with id = {0} is not exists", participantId)
+                )
+        );
+        qrcode.setParticipantId(participantId);
 
         repository.save(qrcode);
         return mapper.mapQrcodeToDto(qrcode);
     }
 
-    public GetQrcodeOutput updateQrcode(Long id, UpdateQrcodeInput qrcodeDto) {
-        Optional<Qrcode> optionalQrcode = repository.findById(id);
-        if (optionalQrcode.isEmpty()) {
-            throw new IllegalStateException("Qrcode with id = " + id + " is not exist");
-        }
-        Qrcode qrcode = optionalQrcode.get();
-
+    public QrcodeResponse updateQrcode(Long id, UpdateQrcodeRequest qrcodeDto) {
+        Qrcode qrcode = repository.findById(id).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Qrcode with id = {0} is not exists", id)
+                )
+        );
         UUID uuid = qrcodeDto.uuid();
-        Long participantId = qrcodeDto.participantId();
 
         if (uuid != null && !uuid.equals(qrcode.getUuid())) {
-            Optional<Qrcode> findByUuid = repository.findByUuid(uuid);
-            if (findByUuid.isPresent()) {
-                throw new IllegalStateException("Qrcode with uuid is already exist");
-            }
+            repository.findByUuid(uuid).ifPresent(
+                    qrcode1 -> { throw new AlreadyExistsException(
+                            MessageFormat.format("Qrcode with uuid = {0} is already exists", uuid)
+                    );
+            });
             qrcode.setUuid(uuid);
         }
+
+        Long participantId;
+        if (qrcodeDto.participantId().describeConstable().isEmpty()) {
+            participantId = qrcodeDto.participantId();
+
+            participantRepository.findById(participantId).orElseThrow(
+                    () -> new NotFoundException(
+                            MessageFormat.format("Participant with id = {0} is not exists", participantId)
+                    )
+            );
+        } else {
+            participantId = null;
+        }
+
         if (participantId != null && !participantId.equals(qrcode.getParticipantId())) {
             qrcode.setParticipantId(participantId);
         }
@@ -52,10 +74,12 @@ public class QrcodeService {
     }
 
     public void deleteQrcode(Long id) {
-        Optional<Qrcode> optionalQrcode = repository.findById(id);
-        if (optionalQrcode.isEmpty()) {
-            throw new IllegalStateException("Qrcode with id = " + id + " is not exist");
-        }
+        repository.findById(id).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Qrcode with id = {0} is not exists", id)
+                )
+        );
+
         repository.deleteById(id);
     }
 
@@ -64,15 +88,14 @@ public class QrcodeService {
     }
 
     public Long searchQrcode(UUID uuid) {
-        Optional<Qrcode> optionalQrcode = repository.findByUuid(uuid);
-        if (optionalQrcode.isEmpty()) {
-            throw new IllegalStateException("Qrcode with uuid = " + uuid + " is not exist");
-        }
-        Qrcode qrcode = optionalQrcode.get();
+        Qrcode qrcode = repository.findByUuid(uuid).orElseThrow(
+                () -> new NotFoundException(
+                        MessageFormat.format("Qrcode with uuid = {0} is not exists", uuid)
+                )
+        );
         qrcode.setUuid(UUID.randomUUID());
 
         repository.save(qrcode);
-
         return qrcode.getParticipantId();
     }
 }

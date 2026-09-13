@@ -1,12 +1,17 @@
 package voldemar.dev.qrcode.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
+import java.util.Objects;
 
-@Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
 @Table(name = "participants")
 public class Participant {
     @Id
@@ -20,4 +25,17 @@ public class Participant {
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "participant_id")
     private List<Qrcode> qrcodeList;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Participant that = (Participant) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
