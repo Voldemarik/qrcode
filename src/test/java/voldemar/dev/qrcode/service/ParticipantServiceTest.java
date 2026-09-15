@@ -33,10 +33,18 @@ class ParticipantServiceTest {
     Mapper mockMapper;
 
     @InjectMocks
-    ParticipantService mockService;
+    ParticipantService participantService;
+
+    private void mockParticipantSaveWithId(Long id) {
+        doAnswer(invocation -> {
+            Participant p = invocation.getArgument(0);
+            p.setId(id);
+            return p;
+        }).when(mockRepository).save(any(Participant.class));
+    }
 
     @Test
-    void testCreateParticipantSuccessful() {
+    void createParticipant_successful() {
         Long id = 123L;
         CreateParticipantRequest request = new CreateParticipantRequest("Holly", "Wild", "Doe");
         Qrcode mockQrcode = new Qrcode();
@@ -49,26 +57,22 @@ class ParticipantServiceTest {
                 List.of(mockQrcode.getUuid())
         );
 
-        doAnswer(invocation -> {
-            Participant p = invocation.getArgument(0);
-            p.setId(id);
-            return p;
-        }).when(mockRepository).save(any(Participant.class));
+        mockParticipantSaveWithId(id);
 
         when(mockQrcodeService.createQrcodeEntity(id)).thenReturn(mockQrcode);
         when(mockMapper.mapParticipantToDto(any(Participant.class))).thenReturn(expectedResponse);
 
-        ParticipantResponse actualResponse = mockService.createParticipant(request);
+        ParticipantResponse actualResponse = participantService.createParticipant(request);
 
         assertEquals(expectedResponse, actualResponse);
 
-        verify(mockRepository, times(1)).save(any(Participant.class));
-        verify(mockQrcodeService, times(1)).createQrcodeEntity(id);
-        verify(mockMapper, times(1)).mapParticipantToDto(any(Participant.class));
+        verify(mockRepository).save(any(Participant.class));
+        verify(mockQrcodeService).createQrcodeEntity(id);
+        verify(mockMapper).mapParticipantToDto(any(Participant.class));
     }
 
     @Test
-    void testUpdateParticipantThrowNotFoundException() {
+    void updateParticipant_throwNotFoundException() {
         Long id = 123L;
         UpdateParticipantRequest request = new UpdateParticipantRequest(
                 null,
@@ -80,18 +84,18 @@ class ParticipantServiceTest {
 
         NotFoundException ex = assertThrows(
                 NotFoundException.class,
-                () -> mockService.updateParticipant(id, request)
+                () -> participantService.updateParticipant(id, request)
         );
 
         assertEquals(MessageFormat.format("Participant with id = {0} is not exists", id), ex.getMessage());
 
-        verify(mockRepository, times(1)).findById(id);
+        verify(mockRepository).findById(id);
         verify(mockRepository, never()).save(any(Participant.class));
         verify(mockMapper, never()).mapParticipantToDto(any(Participant.class));
     }
 
     @Test
-    void testUpdateParticipantSuccessful() {
+    void updateParticipant_successful() {
         Long id = 123L;
         UpdateParticipantRequest request = new UpdateParticipantRequest(
                 null,
@@ -117,53 +121,50 @@ class ParticipantServiceTest {
         );
 
         when(mockRepository.findById(id)).thenReturn(Optional.of(mockParticipant));
-        doAnswer(invocation -> {
-            Participant p = invocation.getArgument(0);
-            p.setId(id);
-            return p;
-        }).when(mockRepository).save(any(Participant.class));
+        mockParticipantSaveWithId(id);
         when(mockMapper.mapParticipantToDto(mockParticipant)).thenReturn(expectedResponse);
 
-        ParticipantResponse actualResponse = mockService.updateParticipant(id, request);
+        ParticipantResponse actualResponse = participantService.updateParticipant(id, request);
 
         assertEquals(expectedResponse, actualResponse);
 
-        verify(mockRepository, times(1)).findById(id);
-        verify(mockRepository, times(1)).save(any(Participant.class));
-        verify(mockMapper, times(1)).mapParticipantToDto(mockParticipant);
+        verify(mockRepository).findById(id);
+        verify(mockRepository).save(any(Participant.class));
+        verify(mockMapper).mapParticipantToDto(mockParticipant);
     }
 
+
     @Test
-    void testDeleteParticipantThrowNotFoundException() {
+    void deleteParticipant_throwNotFoundException() {
         Long id = 123L;
 
         when(mockRepository.existsById(id)).thenReturn(false);
 
         NotFoundException ex = assertThrows(
                 NotFoundException.class,
-                () -> mockService.deleteParticipant(id)
+                () -> participantService.deleteParticipant(id)
         );
 
         assertEquals(MessageFormat.format("Participant with id = {0} is not exists", id), ex.getMessage());
 
-        verify(mockRepository, times(1)).existsById(id);
+        verify(mockRepository).existsById(id);
         verify(mockRepository, never()).deleteById(id);
     }
 
     @Test
-    void testDeleteParticipantSuccessful() {
+    void deleteParticipant_successful() {
         Long id = 123L;
 
         when(mockRepository.existsById(id)).thenReturn(true);
 
-        mockService.deleteParticipant(id);
+        participantService.deleteParticipant(id);
 
-        verify(mockRepository, times(1)).existsById(id);
-        verify(mockRepository, times(1)).deleteById(id);
+        verify(mockRepository).existsById(id);
+        verify(mockRepository).deleteById(id);
     }
 
     @Test
-    void testLoginThrowNotFoundException() {
+    void login_throwNotFoundException() {
         UUID uuid = UUID.randomUUID();
         Long id = 123L;
 
@@ -172,18 +173,18 @@ class ParticipantServiceTest {
 
         NotFoundException ex = assertThrows(
                 NotFoundException.class,
-                () -> mockService.login(uuid)
+                () -> participantService.login(uuid)
         );
 
         assertEquals(MessageFormat.format("Participant with id = {0} is not exists", id), ex.getMessage());
 
-        verify(mockQrcodeService, times(1)).findAndRenewQrcode(uuid);
-        verify(mockRepository, times(1)).findById(id);
+        verify(mockQrcodeService).findAndRenewQrcode(uuid);
+        verify(mockRepository).findById(id);
         verify(mockMapper, never()).mapParticipantToLoginDto(any(Participant.class));
     }
 
     @Test
-    void testLoginSuccessful() {
+    void login_successful() {
         UUID uuid = UUID.randomUUID();
         Long id = 123L;
 
@@ -203,12 +204,12 @@ class ParticipantServiceTest {
         when(mockRepository.findById(id)).thenReturn(Optional.of(mockParticipant));
         when(mockMapper.mapParticipantToLoginDto(mockParticipant)).thenReturn(expectedResponse);
 
-        LoginResponse actualResponse = mockService.login(uuid);
+        LoginResponse actualResponse = participantService.login(uuid);
 
         assertEquals(expectedResponse, actualResponse);
 
-        verify(mockQrcodeService, times(1)).findAndRenewQrcode(uuid);
-        verify(mockRepository, times(1)).findById(id);
-        verify(mockMapper, times(1)).mapParticipantToLoginDto(any(Participant.class));
+        verify(mockQrcodeService).findAndRenewQrcode(uuid);
+        verify(mockRepository).findById(id);
+        verify(mockMapper).mapParticipantToLoginDto(any(Participant.class));
     }
 }
